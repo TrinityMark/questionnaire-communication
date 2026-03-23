@@ -144,6 +144,12 @@
             color: #9ca3af;
             font-style: italic;
         }
+
+        input[readonly] {
+            background: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -153,7 +159,7 @@
 
         <form id="questionnaireForm">
             <div class="form-group">
-                <label for="name">Name</label>
+                <label for="name">Full Name</label>
                 <input type="text" id="name" name="name" required placeholder="Your full name">
             </div>
 
@@ -171,10 +177,10 @@
 
             <div class="form-group">
                 <label for="advisorName">Advisor Name</label>
-                <input type="text" id="advisorName" name="advisorName" required placeholder="Advisor's name">
+                <input type="text" id="advisorName" name="advisorName" required readonly placeholder="Select a business above">
             </div>
 
-            <button type="submit" class="btn-submit" id="submitBtn">Submit</button>
+            <button type="submit" class="btn-submit" id="submitBtn" disabled>Submit</button>
         </form>
 
         <div class="message" id="message"></div>
@@ -193,6 +199,9 @@
             SUBMIT_FORM_URL: 'https://bb06665214b0e7c9957df91fc7a08e.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/92dfacfb8e1e466c96ff2d7e0e7c2482/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rcQBZ8M9vzMVYc0c15D1pc5gESqU-xvIlAWsrmaYsv4'
         };
 
+        // Store client-to-advisor mapping
+        let clientAdvisorMap = {};
+
         // ---- Load business names into dropdown ----
         async function loadBusinessNames() {
             const select = document.getElementById('businessName');
@@ -206,10 +215,22 @@
                 // Clear loading option
                 select.innerHTML = '<option value="">-- Select a business --</option>';
 
-                // Expect an array of objects with a "Client" field
+                // Expect an array of objects with "Client" and "Senior" fields
                 const clients = data.value || data;
+                clientAdvisorMap = {};
                 clients.forEach(item => {
                     const name = item.Client || item.Title || item;
+                    // Senior is a SharePoint Person column — extract display name
+                    const senior = item.Senior;
+                    let advisorName = '';
+                    if (senior) {
+                        // Could be an object with DisplayName/Title, or a string
+                        advisorName = senior.DisplayName || senior.Title || senior.Email || (typeof senior === 'string' ? senior : '');
+                        // Strip " - Trinity Advisory" suffix for cleaner display
+                        advisorName = advisorName.replace(/\s*-\s*Trinity Advisory$/i, '');
+                    }
+                    clientAdvisorMap[name] = advisorName;
+
                     const option = document.createElement('option');
                     option.value = name;
                     option.textContent = name;
@@ -228,7 +249,33 @@
                 input.placeholder = 'Type business name manually';
                 select.parentNode.replaceChild(input, select);
             }
+            validateForm();
         }
+
+        // ---- Auto-populate advisor when business is selected ----
+        document.getElementById('businessName').addEventListener('change', (e) => {
+            const advisorInput = document.getElementById('advisorName');
+            const selectedBusiness = e.target.value;
+            advisorInput.value = clientAdvisorMap[selectedBusiness] || '';
+            validateForm();
+        });
+
+        // ---- Validate form to enable/disable submit ----
+        function validateForm() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const business = document.getElementById('businessName').value;
+            const advisor = document.getElementById('advisorName').value.trim();
+            const btn = document.getElementById('submitBtn');
+
+            btn.disabled = !(name && email && business && advisor);
+        }
+
+        // Attach validation to all inputs
+        document.querySelectorAll('#questionnaireForm input, #questionnaireForm select').forEach(el => {
+            el.addEventListener('input', validateForm);
+            el.addEventListener('change', validateForm);
+        });
 
         // ---- Handle form submission ----
         document.getElementById('questionnaireForm').addEventListener('submit', async (e) => {
@@ -258,16 +305,17 @@
 
                 if (!response.ok) throw new Error('Submission failed');
 
-                msg.textContent = 'Thank you! Your response has been submitted.';
+                msg.textContent = 'Submission successful! Thank you for your response.';
                 msg.className = 'message success';
                 document.getElementById('questionnaireForm').reset();
+                document.getElementById('advisorName').value = '';
                 loadBusinessNames(); // Reset dropdown
             } catch (err) {
                 console.error('Submission error:', err);
                 msg.textContent = 'Something went wrong. Please try again.';
                 msg.className = 'message error';
             } finally {
-                btn.disabled = false;
+                btn.disabled = true;
                 btn.innerHTML = 'Submit';
             }
         });
