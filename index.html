@@ -524,14 +524,20 @@
 
             <div class="form-group">
                 <label for="businessName">Business Name</label>
-                <select id="businessName" required>
-                    <option value="">Loading businesses...</option>
-                </select>
+                <input type="text" id="businessName" placeholder="Your business name" required>
             </div>
 
             <div class="form-group">
                 <label for="advisorName">Advisor Name</label>
-                <input type="text" id="advisorName" required readonly placeholder="Select a business above">
+                <select id="advisorName" required>
+                    <option value="">-- Select your advisor --</option>
+                    <option value="Andrea Szasz">Andrea Szasz</option>
+                    <option value="Conor Sarran">Conor Sarran</option>
+                    <option value="Josh Sherrington">Josh Sherrington</option>
+                    <option value="Joshua Patten">Joshua Patten</option>
+                    <option value="Nick Mulqueen">Nick Mulqueen</option>
+                    <option value="Richard Caldecott">Richard Caldecott</option>
+                </select>
             </div>
 
             <button class="btn-submit" id="submitBtn" disabled>Submit and email me a copy</button>
@@ -551,7 +557,6 @@
 
     // ---- State ----
     const answers = {};
-    let clientAdvisorMap = {};
 
     const HABITS_QS = ['1','2','3','4','5'];
     const STRUCTURE_QS = ['6','7','8','9','10'];
@@ -641,48 +646,6 @@
         return sum;
     }
 
-    // ---- SharePoint client loading ----
-    async function loadBusinessNames() {
-        const select = document.getElementById('businessName');
-        try {
-            const response = await fetch(CONFIG.GET_CLIENTS_URL);
-            if (!response.ok) throw new Error('Failed to fetch clients');
-            const data = await response.json();
-
-            select.innerHTML = '<option value="">-- Select a business --</option>';
-            const clients = data.value || data;
-            clientAdvisorMap = {};
-            clients.forEach(item => {
-                const name = item.Client || item.Title || item;
-                const senior = item.Senior;
-                let advisorName = '';
-                if (senior) {
-                    advisorName = senior.DisplayName || senior.Title || senior.Email || (typeof senior === 'string' ? senior : '');
-                    advisorName = advisorName.replace(/\s*-\s*Trinity Advisory$/i, '');
-                }
-                clientAdvisorMap[name] = advisorName;
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                select.appendChild(option);
-            });
-        } catch (err) {
-            console.error('Error loading clients:', err);
-            select.innerHTML = '<option value="">-- Could not load businesses --</option>';
-            const input = document.createElement('input');
-            input.type = 'text'; input.id = 'businessName';
-            input.required = true; input.placeholder = 'Type business name manually';
-            select.parentNode.replaceChild(input, select);
-        }
-        validateForm();
-    }
-
-    // ---- Auto-populate advisor ----
-    document.getElementById('businessName').addEventListener('change', (e) => {
-        document.getElementById('advisorName').value = clientAdvisorMap[e.target.value] || '';
-        validateForm();
-    });
-
     // ---- Validate form ----
     function validateForm() {
         const allAnswered = Object.keys(answers).length === 10;
@@ -763,8 +726,7 @@
         }
     });
 
-    // ---- Init ----
-    loadBusinessNames();
+
 </script>
 </body>
 </html>
