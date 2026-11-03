@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leadership Communication Self-Assessment</title>
+  <link rel="stylesheet" href="trinity.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: var(--font);
             background: #f8fafc;
             color: #1e293b;
             min-height: 100vh;
@@ -531,13 +532,9 @@
                 <label for="advisorName">Advisor Name</label>
                 <select id="advisorName" required>
                     <option value="">-- Select your advisor --</option>
-                    <option value="Andrea Szasz">Andrea Szasz</option>
-                    <option value="Conor Sarran">Conor Sarran</option>
-                    <option value="Josh Sherrington">Josh Sherrington</option>
-                    <option value="Joshua Patten">Joshua Patten</option>
-                    <option value="Nick Mulqueen">Nick Mulqueen</option>
-                    <option value="Richard Caldecott">Richard Caldecott</option>
                 </select>
+                <script src="trinity-advisors.js"></script>
+                <script>trinityLoadAdvisors('advisorName');</script>
             </div>
 
             <button class="btn-submit" id="submitBtn" disabled>Submit and email me a copy</button>
